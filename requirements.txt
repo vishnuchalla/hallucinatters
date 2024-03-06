@@ -1,4 +1,7 @@
-llama_index==0.9.39
+llama_index==0.10.16
+llama-index-embeddings-huggingface
+llama-index-embeddings-instructor
+llama-index-vector-stores-faiss
 transformers
 torch
 pysqlite3
