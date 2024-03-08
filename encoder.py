@@ -1,67 +1,64 @@
-import os
-import time
-
-from llama_index.embeddings.huggingface import HuggingFaceEmbedding
-from llama_index.core import Settings, VectorStoreIndex, SimpleDirectoryReader
-from llama_index.core.storage.storage_context import StorageContext
+from llama_index.core import ServiceContext, PromptHelper, StorageContext
+from llama_index.embeddings.openai import OpenAIEmbedding
+from llama_index.llms.openai import OpenAI
+from llama_index.core.node_parser import SimpleNodeParser
+from llama_index.core import VectorStoreIndex, SimpleDirectoryReader
 from llama_index.vector_stores.faiss import FaissVectorStore
+import tiktoken
+import os
+from llama_index.embeddings.huggingface import HuggingFaceEmbedding
+import os
+
+os.environ['KMP_DUPLICATE_LIB_OK']='True'
+os.environ['OPENAI_API_KEY'] = "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"
+
 import faiss
 
-import argparse
-import asyncio
+# dimensions of text-ada-embedding-002
+#d = 1536
+d=768
+faiss_index = faiss.IndexFlatL2(d)
 
-# Constant
-INDEX_NAME = "hallucinatters_rag_index"
+llm = OpenAI(model='gpt-3.5-turbo', temperature=0, max_tokens=256)
 
-async def main():
+embed_model = HuggingFaceEmbedding(model_name="google-bert/bert-base-uncased")
 
-    start_time = time.time()
-    parser = argparse.ArgumentParser(
-        description="embedding cli for task execution"
+
+node_parser = SimpleNodeParser.from_defaults(
+  separator=" ",
+  chunk_size=1024,
+  chunk_overlap=20,
+  #tokenizer=tiktoken.encoding_for_model("gpt-3.5-turbo").encode
+)
+
+prompt_helper = PromptHelper(
+  context_window=4096, 
+  num_output=256, 
+  chunk_overlap_ratio=0.1, 
+  chunk_size_limit=None
+)
+
+service_context = ServiceContext.from_defaults(
+  llm=None,
+  embed_model=embed_model,
+  node_parser=node_parser,
+  prompt_helper=prompt_helper
+)
+
+documents = SimpleDirectoryReader(input_dir='hallucinators_rag').load_data()
+
+vector_store = FaissVectorStore(faiss_index=faiss_index)
+storage_context = StorageContext.from_defaults(vector_store=vector_store)
+
+index = VectorStoreIndex.from_documents(
+    documents, 
+    service_context = service_context,
+    storage_context=storage_context,
+    show_progress=True
     )
-    parser.add_argument("-t", "--vector-type",   default="local", help="Type of vector db [local,faiss]")
-    parser.add_argument("-c", "--chunk",   default="1500", help="Chunk size for embedding")
-    parser.add_argument("-l", "--overlap",   default="10", help="Chunk overlap for embedding")
-    parser.add_argument("-f", "--folder", help="Plain text folder path")
-    parser.add_argument("-m", "--model",   default="embeddings_model", help="LLM model used for embeddings [local, llama2, or any other supported by llama_index]")
-    parser.add_argument("-o", "--output", help="Vector DB output folder")
 
+index.storage_context.persist(persist_dir="hfpersist")
 
-    # execute
-    args = parser.parse_args()  
-
-    print(args)
-
-    PERSIST_FOLDER = args.output
-
-    # setup storage context
-    match args.vector_type:
-        case "local":
-            print("** Local embeddings")
-            storage_context = StorageContext.from_defaults()
-        case "faiss":
-            faiss_index = faiss.IndexFlatL2(768)
-            vector_store = FaissVectorStore(faiss_index=faiss_index)
-            storage_context = StorageContext.from_defaults(vector_store=vector_store)
-
-    print("** Configured storage context")
-    documents = SimpleDirectoryReader(input_dir=args.folder, recursive=True).load_data()
-    print("** Loading docs ")
-    Settings.chunk_size = int(args.chunk)
-    Settings.chunk_overlap = int(args.overlap)
-    Settings.embed_model = HuggingFaceEmbedding(model_name=args.model)
-    Settings.llm = None
-    os.environ["HF_HOME"] = args.model
-    os.environ["TRANSFORMERS_OFFLINE"] = "1"
-
-    index = VectorStoreIndex.from_documents(documents, storage_context=storage_context, show_progress=True)
-    index.set_index_id(INDEX_NAME)
-    index.storage_context.persist(persist_dir=PERSIST_FOLDER)
-    print("*** Completed  embeddings ")
-
-    end_time = time.time()
-    execution_time_seconds = end_time - start_time
-
-    print(f"** Total execution time in seconds: {execution_time_seconds}")
-
-asyncio.run(main())
+query_engine = index.as_query_engine(service_context=service_context)
+response = query_engine.query("What is tuition reimbursement?")
+print(response)
