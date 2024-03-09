@@ -1,2 +1,4 @@
-embeddings_model
-ocp-perfscale-team-sync
+hallucinatters_rag
+hallucinatters_rag_docs
+__pycache__
+myenv
