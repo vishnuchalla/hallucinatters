@@ -51,7 +51,7 @@ async def main():
     )
 
     os.environ['KMP_DUPLICATE_LIB_OK']='True'
-    os.environ['OPENAI_API_KEY'] = "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"
+    os.environ['OPENAI_API_KEY'] = "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"
     embed_model = args.model if args.model else OpenAIEmbedding()
     Settings.llm=None
     Settings.embed_model=embed_model
