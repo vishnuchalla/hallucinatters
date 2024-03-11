@@ -9,12 +9,10 @@ os.environ['OPENAI_API_KEY'] = "sk-KG22FKTOk7VEaT4dEGh3T3BlbkFJw32Sve4HpZe7haWIt
 from ragas.metrics import (
     faithfulness,
     answer_relevancy,
-    context_precision,
     answer_correctness,
 )
 from ragas import evaluate
 import re
-import time
 
 
 def evaluate_hyde(args):
@@ -50,7 +48,6 @@ def evaluate_hyde(args):
     metrics = [
     faithfulness,
     answer_relevancy,
-    context_precision,
     answer_correctness,
     ]
 
@@ -98,7 +95,6 @@ def evaluate_rag(args):
     metrics = [
     faithfulness,
     answer_relevancy,
-    context_precision,
     answer_correctness,
     ]
 
@@ -125,11 +121,10 @@ if __name__ == '__main__':
 
     # execute
     args = parser.parse_args()
-    rag_results = evaluate_rag(args)
-    time.sleep(60)
+    # rag_results = evaluate_rag(args)
     hyde_results = evaluate_hyde(args)
-    print("RAG results:")
-    print(rag_results)
+    # print("RAG results:")
+    # print(rag_results)
     print("HYDE results:")
     print(hyde_results)
     

@@ -80,7 +80,7 @@ class Hyde:
         print("Fetching similar docs and summarizing them")
         ret= VectorIndexRetriever(
             index=index,
-            similarity_top_k=3
+            similarity_top_k=1
         )
         response_syn=get_response_synthesizer(
             response_mode="tree_summarize",
