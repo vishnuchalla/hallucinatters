@@ -35,7 +35,7 @@ class Rag:
         )
 
         os.environ['KMP_DUPLICATE_LIB_OK']='True'
-        os.environ['OPENAI_API_KEY'] = "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"
+        os.environ['OPENAI_API_KEY'] = "API_TOKEN"
         embed_model = args.model if args.model else OpenAIEmbedding()
         Settings.llm=None
         Settings.embed_model=embed_model
